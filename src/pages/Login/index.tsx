@@ -1,44 +1,19 @@
-/** 登录页 **/
-
-// ==================
-// 所需的各种插件
-// ==================
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import tools from "@/util/tools";
 
-// ==================
-// 所需的所有组件
-// ==================
-import Vcode from "react-vcode";
-import { Form, Input, Button, Checkbox, message } from "antd";
-import { UserOutlined, KeyOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Form, Input, message } from "antd";
+import { KeyOutlined, UserOutlined } from "@ant-design/icons";
 import CanvasBack from "@/components/CanvasBack";
 import LogoImg from "@/assets/logo.png";
 
-// ==================
-// 类型声明
-// ==================
 import { Dispatch } from "@/store";
-import {
-  Role,
-  Menu,
-  Power,
-  UserBasicInfo,
-  Res,
-  MenuAndPower,
-} from "@/models/index.type";
+import { Menu, Power, Res, Role, UserBasicInfo } from "@/models/index.type";
 import { CheckboxChangeEvent } from "antd/lib/checkbox";
 
-// ==================
-// CSS
-// ==================
 import "./index.less";
 
-// ==================
-// 本组件
-// ==================
 function LoginContainer(): JSX.Element {
   const dispatch = useDispatch<Dispatch>();
 
@@ -46,8 +21,19 @@ function LoginContainer(): JSX.Element {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false); // 是否正在登录中
   const [rememberPassword, setRememberPassword] = useState(false); // 是否记住密码
-  const [codeValue, setCodeValue] = useState("00000"); // 当前验证码的值
   const [show, setShow] = useState(false); // 加载完毕时触发动画
+  const [captchaValue, setCaptchaValue] = useState();
+  const [captchaIdValue, setCaptchaIdValue] = useState("123456");
+  const [openCaptchaValue, setOpenCaptchaValue] = useState(true);
+
+  const onGetCaptcha = async (): Promise<void> => {
+    const res: Res | undefined = await dispatch.app.getCaptcha();
+    if (res) {
+      setCaptchaValue(res.data.picPath);
+      setCaptchaIdValue(res.data.captchaId);
+      setOpenCaptchaValue(res.data.openCaptcha);
+    }
+  };
 
   // 进入登陆页时，判断之前是否保存了用户名和密码
   useEffect(() => {
@@ -67,77 +53,93 @@ function LoginContainer(): JSX.Element {
       document.getElementById("vcode")?.focus();
     }
     setShow(true);
+    //设置初始化的验证码
+    onGetCaptcha();
   }, [form]);
 
   /**
    * 执行登录
-   * 这里模拟：
    * 1.登录，得到用户信息
-   * 2.通过用户信息获取其拥有的所有角色信息
-   * 3.通过角色信息获取其拥有的所有权限信息
+   * 2.通过用户信息获取菜单信息
    * **/
   const loginIn = useCallback(
-    async (username: string, password: string) => {
+    async (
+      username: string,
+      password: string,
+      captcha: string,
+      captchaIdValue: string,
+      openCaptcha: boolean
+    ) => {
       let userBasicInfo: UserBasicInfo | null = null;
-      let roles: Role[] = [];
-      let menus: Menu[] = [];
-      let powers: Power[] = [];
+      const roles: Role[] = [];
+      const menus: Menu[] = [];
+      const powers: Power[] = [];
 
-      /** 1.登录 （返回信息中有该用户拥有的角色id） **/
+      /** 1.登录 （返回信息中有该用户id及token信息） **/
       const res1: Res | undefined = await dispatch.app.onLogin({
         username,
         password,
+        captcha,
+        captchaId: captchaIdValue,
+        openCaptcha,
       });
-      if (!res1 || res1.status !== 200 || !res1.data) {
+      if (!res1 || res1.code !== 0 || !res1.data) {
         // 登录失败
         return res1;
+      } else {
+        await dispatch.app.setToken(res1.data.token);
+        await dispatch.app.setUserId(res1.data.user.ID);
       }
 
-      userBasicInfo = res1.data;
+      userBasicInfo = res1.data.user;
 
-      /** 2.根据角色id获取角色信息 (角色信息中有该角色拥有的菜单id和权限id) **/
-      const res2 = await dispatch.sys.getRoleById({
-        id: (userBasicInfo as UserBasicInfo).roles,
-      });
-      if (!res2 || res2.status !== 200) {
-        // 角色查询失败
-        return res2;
+      /** 2.查询用户的权限菜单 **/
+      const res2: Res | undefined = await dispatch.sys.getMenu();
+      if (res2 && res2.code === 0) {
+        const menu = [];
+        res2.data.menus.map((data) => {
+          let parent = null;
+          if (!data.hidden) {
+            menu.push({
+              id: data.ID,
+              title: data.meta.title,
+              icon: data.meta.icon,
+              url: `/${data.path}`,
+              parent: parent, //data.parentId
+              desc: "",
+              sorts: data.sort,
+              conditions: 1,
+            });
+          }
+          if (data.children) {
+            parent = data.ID;
+            data.children.map((child) => {
+              if (!child.hidden) {
+                menu.push({
+                  id: child.ID,
+                  title: child.meta.title,
+                  icon: child.meta.icon,
+                  url: `/${data.path}`,
+                  parent: parent,
+                  desc: "",
+                  sorts: child.sort,
+                  conditions: 1,
+                });
+              }
+            });
+          }
+        });
+        return {
+          code: 0,
+          data: {
+            userBasicInfo: userBasicInfo,
+            roles,
+            menus: menu,
+            powers,
+          },
+        };
       }
-
-      roles = res2.data.filter((item: Role) => item.conditions === 1); // conditions: 1启用 -1禁用
-
-      /** 3.根据菜单id 获取菜单信息 **/
-      const menuAndPowers = roles.reduce(
-        (a, b) => [...a, ...b.menuAndPowers],
-        [] as MenuAndPower[]
-      );
-      const res3 = await dispatch.sys.getMenusById({
-        id: Array.from(new Set(menuAndPowers.map((item) => item.menuId))),
-      });
-      if (!res3 || res3.status !== 200) {
-        // 查询菜单信息失败
-        return res3;
-      }
-
-      menus = res3.data.filter((item: Menu) => item.conditions === 1);
-
-      /** 4.根据权限id，获取权限信息 **/
-      const res4 = await dispatch.sys.getPowerById({
-        id: Array.from(
-          new Set(
-            menuAndPowers.reduce(
-              (a, b: MenuAndPower) => [...a, ...b.powers],
-              [] as number[]
-            )
-          )
-        ),
-      });
-      if (!res4 || res4.status !== 200) {
-        // 权限查询失败
-        return res4;
-      }
-      powers = res4.data.filter((item: Power) => item.conditions === 1);
-      return { status: 200, data: { userBasicInfo, roles, menus, powers } };
+      return { code: 0, data: { userBasicInfo, roles, menus, powers } };
     },
     [dispatch.sys, dispatch.app]
   );
@@ -147,8 +149,14 @@ function LoginContainer(): JSX.Element {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      const res = await loginIn(values.username, values.password);
-      if (res && res.status === 200) {
+      const res = await loginIn(
+        values.username,
+        values.password,
+        values.captcha,
+        captchaIdValue,
+        openCaptchaValue
+      );
+      if (res && res.code === 0) {
         message.success("登录成功");
         if (rememberPassword) {
           localStorage.setItem(
@@ -166,10 +174,12 @@ function LoginContainer(): JSX.Element {
           "userinfo",
           tools.compile(JSON.stringify(res.data))
         );
+        console.log(res.data);
         await dispatch.app.setUserInfo(res.data);
         navigate("/"); // 跳转到主页
       } else {
-        message.error(res?.message ?? "登录失败");
+        onGetCaptcha();
+        message.error(res?.msg ?? "登录失败");
         setLoading(false);
       }
     } catch (e) {
@@ -180,14 +190,6 @@ function LoginContainer(): JSX.Element {
   // 记住密码按钮点击
   const onRemember = (e: CheckboxChangeEvent): void => {
     setRememberPassword(e.target.checked);
-  };
-
-  // 验证码改变时触发
-  const onVcodeChange = (code: string | null): void => {
-    form.setFieldsValue({
-      vcode: code, // 开发模式自动赋值验证码，正式环境，这里应该赋值''
-    });
-    setCodeValue(code || "");
   };
 
   return (
@@ -238,19 +240,15 @@ function LoginContainer(): JSX.Element {
             </Form.Item>
             <Form.Item>
               <Form.Item
-                name="vcode"
+                name="captcha"
                 noStyle
                 rules={[
                   (): any => ({
                     validator: (rule: any, value: string): Promise<any> => {
                       const v = tools.trim(value);
                       if (v) {
-                        if (v.length > 4) {
-                          return Promise.reject("验证码为4位字符");
-                        } else if (
-                          v.toLowerCase() !== codeValue.toLowerCase()
-                        ) {
-                          return Promise.reject("验证码错误");
+                        if (v.length > 6) {
+                          return Promise.reject("验证码为6位字符");
                         } else {
                           return Promise.resolve();
                         }
@@ -264,21 +262,26 @@ function LoginContainer(): JSX.Element {
                 <Input
                   style={{ width: "200px" }}
                   size="large"
-                  id="vcode" // 为了获取焦点
+                  id="captcha" // 为了获取焦点
                   placeholder="请输入验证码"
                   onPressEnter={onSubmit}
                 />
               </Form.Item>
-              <Vcode
-                height={40}
-                width={150}
-                onChange={onVcodeChange}
-                className="vcode"
-                style={{ color: "#f00" }}
-                options={{
-                  lines: 16,
-                }}
-              />
+              <>
+                <div
+                  height={40}
+                  width={150}
+                  className="captcha"
+                  onClick={onGetCaptcha}
+                >
+                  <img
+                    height={40}
+                    width={150}
+                    src={captchaValue}
+                    alt={"请输入验证码"}
+                  />
+                </div>
+              </>
             </Form.Item>
             <div style={{ lineHeight: "40px" }}>
               <Checkbox

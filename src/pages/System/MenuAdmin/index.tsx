@@ -103,7 +103,7 @@ function MenuAdminContainer() {
     setLoading(true);
     try {
       const res = await dispatch.sys.getMenus();
-      if (res && res.status === 200) {
+      if (res && res.code === 0) {
         setData(res.data);
       }
     } finally {

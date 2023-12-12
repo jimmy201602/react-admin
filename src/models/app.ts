@@ -49,12 +49,30 @@ export default {
 
   effects: (dispatch: Dispatch) => ({
     /**
-     * 登录
-     * @param { username, password } params
+     * 获取验证码
      * */
-    async onLogin(params: { username: string; password: string }) {
+    async getCaptcha() {
       try {
-        const res: Res = await axios.post("/api/login", params);
+        const res: Res = await axios.post("/api/base/captcha");
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+    /**
+     * 登录
+     * @param { username, password, captcha } params
+     * */
+    async onLogin(params: {
+      username: string;
+      password: string;
+      captcha: string;
+      captchaId: string;
+      openCaptcha: boolean;
+    }) {
+      try {
+        const res: Res = await axios.post("/api/base/login", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -71,6 +89,8 @@ export default {
 
         dispatch({ type: "app/reducerLogout", payload: null });
         sessionStorage.removeItem("userinfo");
+        window.localStorage.removeItem("token");
+        window.localStorage.removeItem("user-id");
         return "success";
       } catch (err) {
         message.error("网络错误，请重试");
@@ -86,6 +106,24 @@ export default {
       return "success";
     },
 
+    /**
+     * 设置用户token
+     * @param: {*} token
+     * **/
+    async setToken(token: string) {
+      window.localStorage.setItem("token", token);
+      return;
+    },
+
+    /**
+     * 设置用户token
+     * @param: {*} token
+     * **/
+    async setUserId(token: string) {
+      window.localStorage.setItem("user-id", token);
+      return;
+    },
+
     /** 修改了角色/菜单/权限信息后需要更新用户的roles,menus,powers数据 **/
     async updateUserInfo(payload: null, rootState: RootState): Promise<any> {
       /** 2.重新查询角色信息 **/
@@ -94,7 +132,7 @@ export default {
       const res2: Res | undefined = await dispatch.sys.getRoleById({
         id: userinfo.roles.map((item) => item.id),
       });
-      if (!res2 || res2.status !== 200) {
+      if (!res2 || res2.code !== 0) {
         // 角色查询失败
         return res2;
       }
@@ -111,7 +149,7 @@ export default {
       const res3: Res | undefined = await dispatch.sys.getMenusById({
         id: Array.from(new Set(menuAndPowers.map((item) => item.menuId))),
       });
-      if (!res3 || res3.status !== 200) {
+      if (!res3 || res3.code !== 0) {
         // 查询菜单信息失败
         return res3;
       }
@@ -127,7 +165,7 @@ export default {
           )
         ),
       });
-      if (!res4 || res4.status !== 200) {
+      if (!res4 || res4.code !== 0) {
         // 权限查询失败
         return res4;
       }

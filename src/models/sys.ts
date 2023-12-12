@@ -31,6 +31,7 @@ export default {
   reducers: {
     // 保存所有菜单数据
     reducerSetMenus(state: SysState, payload: Menu[]): SysState {
+      console.log("set menus", payload);
       return { ...state, menus: payload };
     },
     // 保存所有角色数据
@@ -213,6 +214,18 @@ export default {
       return;
     },
 
+    /**
+     /api/menu/getMenu
+    * **/
+    async getMenu() {
+      try {
+        const res: Res = await axios.post(`/api/menu/getMenu`);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
     /**
      * 通过角色ID查询对应的角色数据
      * @param id 可以是一个数字，也可以是一个数组

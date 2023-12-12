@@ -11,6 +11,15 @@ function pathResolve(dir) {
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "./",
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://demo.gin-vue-admin.com",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   plugins: [
     react(),
     eslintPlugin({

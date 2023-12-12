@@ -1,33 +1,18 @@
 /** 对axios做一些配置 **/
 
 import { baseUrl } from "../config";
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 
-/**
- * MOCK模拟数据
- * 不需要下面这些mock配置，仅本地用
- * 正式打包需要去掉
- * */
-import Mock from "mockjs";
-// @ts-ignore
-import mock from "../../mock/app-data.js";
-Mock.mock(/\/api.*/, (options: any) => {
-  const res = mock(options);
-  return res;
+axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
+  const authToken = localStorage.getItem("token");
+  const Userid = localStorage.getItem("user-id");
+  if (authToken && Userid && config.headers) {
+    config.headers["x-token"] = authToken;
+    config.headers["x-user-id"] = Userid;
+    return config;
+  }
+  return config;
 });
-
-/**
- * 根据不同环境设置不同的请求地址
- * 把返回值赋给axios.defaults.baseURL即可
- */
-// function setBaseUrl(){
-//   switch(process.env.NODE_ENV){
-//     case 'development': return 'http://development.com';
-//     case 'test': return 'http://test.com';
-//     case 'production' : return 'https://production.com';
-//     default : return baseUrl;
-//   }
-// }
 
 // 默认基础请求地址
 axios.defaults.baseURL = baseUrl;
