@@ -65,7 +65,7 @@ export interface UserInfo {
 // 用户的基本信息
 export interface UserBasicInfo {
   id: number; // ID
-  username: string; // 用户名
+  userName: string; // 用户名
   password: string | number; // 密码
   phone: string | number; // 手机
   email: string; // 邮箱

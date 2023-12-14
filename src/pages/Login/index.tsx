@@ -13,6 +13,7 @@ import { Menu, Power, Res, Role, UserBasicInfo } from "@/models/index.type";
 import { CheckboxChangeEvent } from "antd/lib/checkbox";
 
 import "./index.less";
+import { useMount } from "react-use";
 
 function LoginContainer(): JSX.Element {
   const dispatch = useDispatch<Dispatch>();
@@ -35,6 +36,11 @@ function LoginContainer(): JSX.Element {
     }
   };
 
+  useMount( () => {
+    //设置初始化的验证码
+    onGetCaptcha();
+  });
+
   // 进入登陆页时，判断之前是否保存了用户名和密码
   useEffect(() => {
     const userLoginInfo = localStorage.getItem("userLoginInfo");
@@ -53,8 +59,6 @@ function LoginContainer(): JSX.Element {
       document.getElementById("vcode")?.focus();
     }
     setShow(true);
-    //设置初始化的验证码
-    onGetCaptcha();
   }, [form]);
 
   /**
@@ -99,12 +103,13 @@ function LoginContainer(): JSX.Element {
         const menu = [];
         res2.data.menus.map((data) => {
           let parent = null;
+          const parentPath = `/${data.path}`
           if (!data.hidden) {
             menu.push({
               id: data.ID,
               title: data.meta.title,
               icon: data.meta.icon,
-              url: `/${data.path}`,
+              url: data.path,
               parent: parent, //data.parentId
               desc: "",
               sorts: data.sort,
@@ -119,7 +124,7 @@ function LoginContainer(): JSX.Element {
                   id: child.ID,
                   title: child.meta.title,
                   icon: child.meta.icon,
-                  url: `/${data.path}`,
+                  url: `${parentPath}/${child.path}`,
                   parent: parent,
                   desc: "",
                   sorts: child.sort,
@@ -174,7 +179,6 @@ function LoginContainer(): JSX.Element {
           "userinfo",
           tools.compile(JSON.stringify(res.data))
         );
-        console.log(res.data);
         await dispatch.app.setUserInfo(res.data);
         navigate("/"); // 跳转到主页
       } else {
