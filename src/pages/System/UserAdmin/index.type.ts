@@ -7,20 +7,22 @@ export type { UserBasicInfoParam, Res } from "@/models/index.type";
 // 列表table的数据类型
 export type TableRecordData = {
   key?: number;
-  id: number;
+  ID: number;
   serial: number; // 序号
-  username: string; // 用户名
+  userName: string; // 用户名
   password: string; // 密码
   phone: string | number; // 手机
   email: string; // 邮箱
-  desc: string; // 描述
-  conditions: number; // 是否启用 1启用 -1禁用
+  nickName: string; // 描述
+  enable: number; // 是否启用 1启用 -1禁用
   control?: number; // 控制，传入的ID
   roles?: number[]; // 拥有的所有权限ID
+  headerImg: string; //头像图片链接
+  authorities: any; //用户角色id
 };
 
 export type Page = {
-  pageNum: number;
+  page: number;
   pageSize: number;
   total: number;
 };
@@ -32,11 +34,6 @@ export type ModalType = {
   nowData: UserBasicInfoParam | null;
   modalShow: boolean;
   modalLoading: boolean;
-};
-
-export type SearchInfo = {
-  username: string | undefined; // 用户名
-  conditions: number | undefined; // 状态
 };
 
 export type RoleTreeInfo = {

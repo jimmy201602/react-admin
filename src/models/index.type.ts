@@ -51,7 +51,7 @@ export interface PowerParam {
 
 // 权限对象
 export interface Power extends PowerParam {
-  id: number; // ID
+  code: string; // ID
 }
 
 // 用户数据类型
@@ -64,7 +64,7 @@ export interface UserInfo {
 
 // 用户的基本信息
 export interface UserBasicInfo {
-  id: number; // ID
+  ID: number; // ID
   userName: string; // 用户名
   password: string | number; // 密码
   phone: string | number; // 手机

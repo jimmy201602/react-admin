@@ -143,12 +143,16 @@ export default {
     },
 
     /** 获取所有角色 **/
-    async getAllRoles(): Promise<Res> {
+    async getAllAuthority(): Promise<Res> {
       try {
-        const res: Res = await axios.get("/api/getAllRoles");
-        if (res && res.status === 200) {
-          dispatch.sys.reducerSetRoles(res.data);
-        }
+        const res: Res = await axios.post("/api/authority/getAuthorityList", {
+          page: 1,
+          pageSize: 999,
+        });
+        // console.log(111, res);
+        // if (res && res.code === 0) {
+        //   dispatch.sys.reducerSetRoles(res.data);
+        // }
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -352,14 +356,13 @@ export default {
      * 条件分页查询用户列表
      * **/
     async getUserList(params: {
-      pageNum: number;
+      page: number;
       pageSize: number;
-      username?: string;
-      conditions?: number;
     }) {
       try {
-        const res: Res = await axios.get(
-          `/api/getUserList?${qs.stringify(params)}`
+        const res: Res = await axios.post(
+          "/api/user/getUserList",
+          params
         );
         return res;
       } catch (err) {
@@ -414,6 +417,30 @@ export default {
     async setUserRoles(params: { id: number; roles: number[] }) {
       try {
         const res: Res = await axios.post("/api/upUser", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+    /**
+     * 设置用户开启关闭状态
+     * **/
+    async setUserStatus(params: { ID: number; enable: number, email: string, headerImg: string,nickName: string, phone: string | number }) {
+      try {
+        const res: Res = await axios.put("/api/user/setUserInfo", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+    /**
+     * 设置用户角色
+     * **/
+    async setUserAuthorities(params: {ID: number, authorityIds: number[]}) {
+      try {
+        const res: Res = await axios.post("/api/user/setUserAuthorities", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");

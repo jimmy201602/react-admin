@@ -160,7 +160,7 @@ export default function HeaderCom(props: Props): JSX.Element {
           >
             <div className="userhead all_center">
               <SmileOutlined />
-              <span className="username">{u.username}</span>
+              <span className="username">{u.userName}</span>
             </div>
           </Dropdown>
         ) : (

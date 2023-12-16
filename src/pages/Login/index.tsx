@@ -115,6 +115,11 @@ function LoginContainer(): JSX.Element {
               sorts: data.sort,
               conditions: 1,
             });
+            if (data.btns) {
+              Object.keys(data.btns).map( (btn) => {
+                powers.push({ conditions: 1, desc: "", menu: 0, sorts: 0, title: "", code: btn, id: data.ID })
+              })
+            }
           }
           if (data.children) {
             parent = data.ID;
@@ -130,6 +135,11 @@ function LoginContainer(): JSX.Element {
                   sorts: child.sort,
                   conditions: 1,
                 });
+                if (child.btns) {
+                  Object.keys(child.btns).map( (btn) => {
+                    powers.push({ conditions: 1, desc: "", menu: 0, sorts: 0, title: "", code: btn, id: child.ID })
+                  })
+                }
               }
             });
           }

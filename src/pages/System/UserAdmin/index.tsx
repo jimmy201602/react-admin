@@ -17,6 +17,8 @@ import {
   Tooltip,
   Divider,
   Select,
+  Switch,
+  Cascader,
 } from "antd";
 import {
   EyeOutlined,
@@ -47,11 +49,6 @@ const formItemLayout = {
 };
 
 // ==================
-// 所需的组件
-// ==================
-import RoleTree from "@/components/TreeChose/RoleTree";
-
-// ==================
 // 类型声明
 // ==================
 import {
@@ -59,7 +56,6 @@ import {
   Page,
   operateType,
   ModalType,
-  SearchInfo,
   RoleTreeInfo,
   UserBasicInfoParam,
   Res,
@@ -85,7 +81,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 分页相关参数
   const [page, setPage] = useSetState<Page>({
-    pageNum: 1,
+    page: 1,
     pageSize: 10,
     total: 0,
   });
@@ -98,34 +94,68 @@ function UserAdminContainer(): JSX.Element {
     modalLoading: false,
   });
 
-  // 搜索相关参数
-  const [searchInfo, setSearchInfo] = useSetState<SearchInfo>({
-    username: undefined, // 用户名
-    conditions: undefined, // 状态
+  // 角色树相关参数
+  // const [role, setRole] = useSetState<RoleTreeInfo>({
+  //   roleData: [],
+  //   roleTreeLoading: false,
+  //   roleTreeShow: false,
+  //   roleTreeDefault: [],
+  // });
+  const [role, setRole] = useSetState({
+    roleData: [],
+    modalShow: false,
+    modalLoading: false,
   });
 
-  // 角色树相关参数
-  const [role, setRole] = useSetState<RoleTreeInfo>({
-    roleData: [],
-    roleTreeLoading: false,
-    roleTreeShow: false,
-    roleTreeDefault: [],
-  });
+  const { SHOW_CHILD } = Cascader;
 
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
     onGetData(page);
-    getAllRolesData();
+    getAllAuthorityData();
   });
 
   // 函数 - 获取所有的角色数据，用于分配角色控件的原始数据
-  const getAllRolesData = async (): Promise<void> => {
+  const getAllAuthorityData = async (): Promise<void> => {
     try {
-      const res = await dispatch.sys.getAllRoles();
-      if (res && res.status === 200) {
-        setRole({
-          roleData: res.data,
-        });
+      const res = await dispatch.sys.getAllAuthority();
+      if (res && res.code === 0) {
+        setRole({ roleData: res.data.list });
+      } else {
+        message.error(res?.msg ?? "数据获取失败");
+      }
+    } catch {
+      //
+    }
+  };
+
+  // 函数 - 设置用户开启关闭状态
+  const setUserStatus = async (params: { ID: number; enable: number, email: string, headerImg: string,nickName: string, phone: string | number }): Promise<void> => {
+    try {
+      const res = await dispatch.sys.setUserStatus(params);
+      if (res && res.code === 0) {
+        setRole({ roleData: res.data.list });
+        message.success(params.enable === 1 ? "启用成功" : "禁用成功");
+        onGetData(page);
+        getAllAuthorityData();
+      } else {
+        message.error(res?.msg ?? "数据获取失败");
+      }
+    } catch {
+      //
+    }
+  };
+
+  // 函数 - 设置用户角色 bug需修复和权限菜单的联动
+  const setUserAuthorities = async (params: { ID: number; authorityIds: number[] }): Promise<void> => {
+    try {
+      const res = await dispatch.sys.setUserAuthorities(params);
+      if (res && res.code === 0) {
+        message.success("角色设置成功");
+        onGetData(page);
+        getAllAuthorityData();
+      } else {
+        message.error(res?.msg ?? "数据获取失败");
       }
     } catch {
       //
@@ -134,7 +164,7 @@ function UserAdminContainer(): JSX.Element {
 
   // 函数 - 查询当前页面所需列表数据
   async function onGetData(page: {
-    pageNum: number;
+    page: number;
     pageSize: number;
   }): Promise<void> {
     if (!p.includes("user:query")) {
@@ -142,47 +172,26 @@ function UserAdminContainer(): JSX.Element {
     }
 
     const params = {
-      pageNum: page.pageNum,
+      page: page.page,
       pageSize: page.pageSize,
-      username: searchInfo.username,
-      conditions: searchInfo.conditions,
     };
     setLoading(true);
     try {
       const res = await dispatch.sys.getUserList(tools.clearNull(params));
-      if (res && res.status === 200) {
+      if (res && res.code === 0) {
         setData(res.data.list);
         setPage({
-          pageNum: page.pageNum,
+          page: page.page,
           pageSize: page.pageSize,
           total: res.data.total,
         });
       } else {
-        message.error(res?.message ?? "数据获取失败");
+        message.error(res?.msg ?? "数据获取失败");
       }
     } finally {
       setLoading(false);
     }
   }
-
-  // 搜索 - 名称输入框值改变时触发
-  const searchUsernameChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
-    if (e.target.value.length < 20) {
-      setSearchInfo({ username: e.target.value });
-    }
-  };
-
-  // 搜索 - 状态下拉框选择时触发
-  const searchConditionsChange = (v: number): void => {
-    setSearchInfo({ conditions: v });
-  };
-
-  // 搜索
-  const onSearch = (): void => {
-    onGetData(page);
-  };
 
   /**
    * 添加/修改/查看 模态框出现
@@ -196,7 +205,7 @@ function UserAdminContainer(): JSX.Element {
     setModal({
       modalShow: true,
       nowData: data,
-      operateType: type,
+      operateType: type
     });
     // 用setTimeout是因为首次让Modal出现时得等它挂载DOM，不然form对象还没来得及挂载到Form上
     setTimeout(() => {
@@ -229,18 +238,18 @@ function UserAdminContainer(): JSX.Element {
         phone: values.phone,
         email: values.email,
         desc: values.desc,
-        conditions: values.conditions,
+        enable: values.enable,
       };
       if (modal.operateType === "add") {
         // 新增
         try {
           const res: Res | undefined = await dispatch.sys.addUser(params);
-          if (res && res.status === 200) {
+          if (res && res.code === 0) {
             message.success("添加成功");
             onGetData(page);
             onClose();
           } else {
-            message.error(res?.message ?? "操作失败");
+            message.error(res?.msg ?? "操作失败");
           }
         } finally {
           setModal({
@@ -252,12 +261,12 @@ function UserAdminContainer(): JSX.Element {
         params.id = modal.nowData?.id;
         try {
           const res: Res | undefined = await dispatch.sys.upUser(params);
-          if (res && res.status === 200) {
+          if (res && res.code === 0) {
             message.success("修改成功");
             onGetData(page);
             onClose();
           } else {
-            message.error(res?.message ?? "操作失败");
+            message.error(res?.msg ?? "操作失败");
           }
         } finally {
           setModal({
@@ -275,11 +284,11 @@ function UserAdminContainer(): JSX.Element {
     setLoading(true);
     try {
       const res = await dispatch.sys.delUser({ id });
-      if (res && res.status === 200) {
+      if (res && res.code === 0) {
         message.success("删除成功");
         onGetData(page);
       } else {
-        message.error(res?.message ?? "操作失败");
+        message.error(res?.msg ?? "操作失败");
       }
     } finally {
       setLoading(false);
@@ -293,56 +302,9 @@ function UserAdminContainer(): JSX.Element {
     });
   };
 
-  /** 分配角色按钮点击，角色控件出现 **/
-  const onTreeShowClick = (record: TableRecordData): void => {
-    setModal({
-      nowData: record,
-    });
-    setRole({
-      roleTreeShow: true,
-      roleTreeDefault: record.roles || [],
-    });
-  };
-
-  // 分配角色确定
-  const onRoleOk = async (keys: string[]): Promise<void> => {
-    if (!modal.nowData?.id) {
-      message.error("未获取到该条数据id");
-      return;
-    }
-    const params = {
-      id: modal.nowData.id,
-      roles: keys.map((item) => Number(item)),
-    };
-    setRole({
-      roleTreeLoading: true,
-    });
-    try {
-      const res: Res = await dispatch.sys.setUserRoles(params);
-      if (res && res.status === 200) {
-        message.success("分配成功");
-        onGetData(page);
-        onRoleClose();
-      } else {
-        message.error(res?.message ?? "操作失败");
-      }
-    } finally {
-      setRole({
-        roleTreeLoading: false,
-      });
-    }
-  };
-
-  // 分配角色树关闭
-  const onRoleClose = (): void => {
-    setRole({
-      roleTreeShow: false,
-    });
-  };
-
   // 表格页码改变
-  const onTablePageChange = (pageNum: number, pageSize: number): void => {
-    onGetData({ pageNum, pageSize });
+  const onTablePageChange = (page: number, pageSize: number): void => {
+    onGetData({ page, pageSize });
   };
 
   // ==================
@@ -350,19 +312,32 @@ function UserAdminContainer(): JSX.Element {
   // ==================
 
   // table字段
-  const tableColumns = [
+  let tableColumns = [
     {
-      title: "序号",
+      title: "头像",
+      dataIndex: "headerImg",
+      key: "headerImg",
+      render: (v: null) => {
+        return <img src={v} className={"header-img-box"}/>
+      }
+    },
+    {
+      title: "ID",
       dataIndex: "serial",
       key: "serial",
     },
     {
       title: "用户名",
-      dataIndex: "username",
-      key: "username",
+      dataIndex: "userName",
+      key: "userName",
     },
     {
-      title: "电话",
+      title: "昵称",
+      dataIndex: "nickName",
+      key: "nickName",
+    },
+    {
+      title: "手机号",
       dataIndex: "phone",
       key: "phone",
     },
@@ -372,20 +347,47 @@ function UserAdminContainer(): JSX.Element {
       key: "email",
     },
     {
-      title: "描述",
-      dataIndex: "desc",
-      key: "desc",
+      title: "用户角色",
+      dataIndex: "authorities",
+      key: "authorities",
+      render: (v: any, record: TableRecordData): JSX.Element => {
+        const onChange = (value: number[][]) => {
+          setUserAuthorities({ID: record.ID, authorityIds: value[0]});
+        };
+        const authorities: number[] = [];
+        v.forEach( (authority) => {
+          authorities.push(authority.authorityId);
+        });
+        return (
+          <Cascader
+          multiple={{ checkStrictly: true }}
+          options={role.roleData}
+          onChange={onChange}
+          showCheckedStrategy={SHOW_CHILD}
+          maxTagCount="responsive"
+          defaultValue={authorities}
+          expandTrigger={"hover"}
+          fieldNames={{ label: 'authorityName', value: 'authorityId', children: 'children' }}
+          />)
+      }
     },
     {
       title: "状态",
-      dataIndex: "conditions",
-      key: "conditions",
-      render: (v: number): JSX.Element =>
-        v === 1 ? (
-          <span style={{ color: "green" }}>启用</span>
-        ) : (
-          <span style={{ color: "red" }}>禁用</span>
-        ),
+      dataIndex: "enable",
+      key: "enable",
+      render: (v: number, record: TableRecordData): JSX.Element => {
+        const onUserStatus = (checked: boolean) => {
+          setUserStatus( {
+            ID: record.ID,
+            enable: checked ? 1 : 2,
+            email: record.email,
+            headerImg: record.headerImg,
+            nickName: record.nickName,
+            phone: record.phone,
+          })
+        };
+        return <Switch checked={v === 1 ? true: false} onChange={onUserStatus}/>
+      }
     },
     {
       title: "操作",
@@ -393,7 +395,7 @@ function UserAdminContainer(): JSX.Element {
       width: 200,
       render: (v: null, record: TableRecordData) => {
         const controls = [];
-        const u = userinfo.userBasicInfo || { id: -1 };
+        const u = userinfo.userBasicInfo || { ID: -1 };
         p.includes("user:query") &&
           controls.push(
             <span
@@ -418,26 +420,14 @@ function UserAdminContainer(): JSX.Element {
               </Tooltip>
             </span>
           );
-        p.includes("user:role") &&
-          controls.push(
-            <span
-              key="2"
-              className="control-btn blue"
-              onClick={() => onTreeShowClick(record)}
-            >
-              <Tooltip placement="top" title="分配角色">
-                <EditOutlined />
-              </Tooltip>
-            </span>
-          );
 
         p.includes("user:del") &&
-          u.id !== record.id &&
+          u.ID !== record.ID &&
           controls.push(
             <Popconfirm
               key="3"
               title="确定删除吗?"
-              onConfirm={() => onDel(record.id)}
+              onConfirm={() => onDel(record.ID)}
               okText="确定"
               cancelText="取消"
             >
@@ -461,21 +451,27 @@ function UserAdminContainer(): JSX.Element {
     },
   ];
 
+  // 用户角色权限设置
+  if (!p.includes("user:role")) {
+    tableColumns = tableColumns.filter( (data) => data.key !== "authorities")
+  };
   // table列表所需数据
   const tableData = useMemo(() => {
     return data.map((item, index) => {
       return {
         key: index,
-        id: item.id,
-        serial: index + 1 + (page.pageNum - 1) * page.pageSize,
-        username: item.username,
+        ID: item.ID,
+        serial: index + 1 + (page.page - 1) * page.pageSize,
+        userName: item.userName,
         password: item.password,
         phone: item.phone,
         email: item.email,
-        desc: item.desc,
-        conditions: item.conditions,
-        control: item.id,
+        nickName: item.nickName,
+        enable: item.enable,
+        control: item.ID,
         roles: item.roles,
+        headerImg: item.headerImg,
+        authorities: item.authorities,
       };
     });
   }, [page, data]);
@@ -495,39 +491,6 @@ function UserAdminContainer(): JSX.Element {
             </Button>
           </li>
         </ul>
-        <Divider type="vertical" />
-        {p.includes("user:query") && (
-          <ul className="search-ul">
-            <li>
-              <Input
-                placeholder="请输入用户名"
-                onChange={searchUsernameChange}
-                value={searchInfo.username}
-              />
-            </li>
-            <li>
-              <Select
-                placeholder="请选择状态"
-                allowClear
-                style={{ width: "200px" }}
-                onChange={searchConditionsChange}
-                value={searchInfo.conditions}
-              >
-                <Option value={1}>启用</Option>
-                <Option value={-1}>禁用</Option>
-              </Select>
-            </li>
-            <li>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={onSearch}
-              >
-                搜索
-              </Button>
-            </li>
-          </ul>
-        )}
       </div>
       <div className="diy-table">
         <Table
@@ -536,7 +499,7 @@ function UserAdminContainer(): JSX.Element {
           dataSource={tableData}
           pagination={{
             total: page.total,
-            current: page.pageNum,
+            current: page.page,
             pageSize: page.pageSize,
             showQuickJumper: true,
             showTotal: (t) => `共 ${t} 条数据`,
@@ -548,7 +511,7 @@ function UserAdminContainer(): JSX.Element {
       {/* 新增&修改&查看 模态框 */}
       <Modal
         title={{ add: "新增", up: "修改", see: "查看" }[modal.operateType]}
-        visible={modal.modalShow}
+        open={modal.modalShow}
         onOk={onOk}
         onCancel={onClose}
         confirmLoading={modal.modalLoading}
@@ -556,12 +519,12 @@ function UserAdminContainer(): JSX.Element {
         <Form
           form={form}
           initialValues={{
-            conditions: 1,
+            enable: 1,
           }}
         >
           <Form.Item
             label="用户名"
-            name="username"
+            name="userName"
             {...formItemLayout}
             rules={[
               { required: true, whitespace: true, message: "必填" },
@@ -636,20 +599,18 @@ function UserAdminContainer(): JSX.Element {
             />
           </Form.Item>
           <Form.Item
-            label="描述"
-            name="desc"
+            label="昵称"
+            name="nickName"
             {...formItemLayout}
             rules={[{ max: 100, message: "最多输入100个字符" }]}
           >
-            <TextArea
-              rows={4}
+            <Input
               disabled={modal.operateType === "see"}
-              autoSize={{ minRows: 2, maxRows: 6 }}
             />
           </Form.Item>
           <Form.Item
             label="状态"
-            name="conditions"
+            name="enable"
             {...formItemLayout}
             rules={[{ required: true, message: "请选择状态" }]}
           >
@@ -665,15 +626,6 @@ function UserAdminContainer(): JSX.Element {
         </Form>
       </Modal>
 
-      <RoleTree
-        title={"分配角色"}
-        data={role.roleData}
-        visible={role.roleTreeShow}
-        defaultKeys={role.roleTreeDefault}
-        loading={role.roleTreeLoading}
-        onOk={onRoleOk}
-        onClose={onRoleClose}
-      />
     </div>
   );
 }
