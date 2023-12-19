@@ -16,9 +16,9 @@ import {
   Modal,
   Tooltip,
   Divider,
-  Select,
   Switch,
   Cascader,
+  Pagination, Row, Col,
 } from "antd";
 import {
   EyeOutlined,
@@ -26,16 +26,12 @@ import {
   ToolOutlined,
   DeleteOutlined,
   PlusCircleOutlined,
-  SearchOutlined,
 } from "@ant-design/icons";
 
 // ==================
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
-
-const { TextArea } = Input;
-const { Option } = Select;
 
 const formItemLayout = {
   labelCol: {
@@ -56,8 +52,6 @@ import {
   Page,
   operateType,
   ModalType,
-  RoleTreeInfo,
-  UserBasicInfoParam,
   Res,
 } from "./index.type";
 import { RootState, Dispatch } from "@/store";
@@ -78,6 +72,18 @@ function UserAdminContainer(): JSX.Element {
   const [form] = Form.useForm();
   const [data, setData] = useState<TableRecordData[]>([]); // 当前页面列表数据
   const [loading, setLoading] = useState(false); // 数据是否正在加载中
+  const [switchValue, setSwitchValue] = useState(true);
+
+  // 改变用户图像功能，未完成
+  const [backgroundVisible, setBackgroundVisible] = useState(false);
+  const [backgroundImagedata, setBackgroundImageData] = useState<any[]>([]); // 当前页面列表数据
+
+  // 用户图像分页相关参数
+  const [backgroundPage, setBackgroundPage] = useSetState<Page>({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   // 分页相关参数
   const [page, setPage] = useSetState<Page>({
@@ -95,12 +101,6 @@ function UserAdminContainer(): JSX.Element {
   });
 
   // 角色树相关参数
-  // const [role, setRole] = useSetState<RoleTreeInfo>({
-  //   roleData: [],
-  //   roleTreeLoading: false,
-  //   roleTreeShow: false,
-  //   roleTreeDefault: [],
-  // });
   const [role, setRole] = useSetState({
     roleData: [],
     modalShow: false,
@@ -130,9 +130,19 @@ function UserAdminContainer(): JSX.Element {
   };
 
   // 函数 - 设置用户开启关闭状态
-  const setUserStatus = async (params: { ID: number; enable: number, email: string, headerImg: string,nickName: string, phone: string | number }): Promise<void> => {
+  const setUserStatus = async (params: {
+    ID: number;
+    enable: number;
+    email: string;
+    headerImg: string;
+    nickName: string;
+    userName: string;
+    phone: string | number;
+    password: string;
+    authorityIds: [];
+  }): Promise<void> => {
     try {
-      const res = await dispatch.sys.setUserStatus(params);
+      const res = await dispatch.sys.updateUserInfo(params);
       if (res && res.code === 0) {
         setRole({ roleData: res.data.list });
         message.success(params.enable === 1 ? "启用成功" : "禁用成功");
@@ -147,7 +157,11 @@ function UserAdminContainer(): JSX.Element {
   };
 
   // 函数 - 设置用户角色 bug需修复和权限菜单的联动
-  const setUserAuthorities = async (params: { ID: number; authorityIds: number[] }): Promise<void> => {
+  // https://github.com/ant-design/ant-design/pull/39818
+  const setUserAuthorities = async (params: {
+    ID: number;
+    authorityIds: number[];
+  }): Promise<void> => {
     try {
       const res = await dispatch.sys.setUserAuthorities(params);
       if (res && res.code === 0) {
@@ -159,6 +173,37 @@ function UserAdminContainer(): JSX.Element {
       }
     } catch {
       //
+    }
+  };
+
+  // 函数 - 查询当前页面所需列表数据
+  async function onGetBackgroundImageData(page: {
+    page: number;
+    pageSize: number;
+  }): Promise<void> {
+    if (!p.includes("user:query")) {
+      return;
+    }
+
+    const params = {
+      page: page.page,
+      pageSize: page.pageSize,
+    };
+    setLoading(true);
+    try {
+      const res = await dispatch.sys.getBackgroundImageList(tools.clearNull(params));
+      if (res && res.code === 0) {
+        setBackgroundImageData(res.data.list);
+        setBackgroundPage({
+          page: page.page,
+          pageSize: page.pageSize,
+          total: res.data.total,
+        });
+      } else {
+        message.error(res?.msg ?? "数据获取失败");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,7 +236,11 @@ function UserAdminContainer(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const onCancel = async (): Promise<void> => {
+    setBackgroundVisible(false);
+  };
 
   /**
    * 添加/修改/查看 模态框出现
@@ -205,10 +254,13 @@ function UserAdminContainer(): JSX.Element {
     setModal({
       modalShow: true,
       nowData: data,
-      operateType: type
+      operateType: type,
     });
     // 用setTimeout是因为首次让Modal出现时得等它挂载DOM，不然form对象还没来得及挂载到Form上
     setTimeout(() => {
+      if (data) {
+        setSwitchValue(true ? data.enable === 1 : false);
+      }
       if (type === "add") {
         // 新增，需重置表单各控件的值
         form.resetFields();
@@ -217,8 +269,19 @@ function UserAdminContainer(): JSX.Element {
         form.setFieldsValue({
           ...data,
         });
+        const authorities: number[] = [];
+        data.authorities.forEach((authority) => {
+          authorities.push(authority.authorityId);
+        });
+        form.setFieldsValue({
+          authorityIds: [authorities],
+        });
       }
     });
+  };
+
+  const onSwitchValueChange = async (checked: boolean) => {
+    setSwitchValue(checked);
   };
 
   /** 模态框确定 **/
@@ -232,21 +295,38 @@ function UserAdminContainer(): JSX.Element {
       setModal({
         modalLoading: true,
       });
-      const params: UserBasicInfoParam = {
-        username: values.username,
-        password: values.password,
-        phone: values.phone,
+      const params: {
+        ID: number;
+        enable: number;
+        email: string;
+        headerImg: string;
+        nickName: string;
+        userName: string;
+        phone: string | number;
+        password: string;
+        authorityIds: number[];
+      } = {
+        ID: 0,
+        enable: 2,
         email: values.email,
-        desc: values.desc,
-        enable: values.enable,
+        headerImg: values.headerImg,
+        nickName: values.nickName,
+        userName: values.userName,
+        phone: values.phone,
+        password: values.password,
+        authorityIds: values.authorityIds[0],
       };
+      if (values.enable) {
+        params.enable = 1;
+      }
       if (modal.operateType === "add") {
         // 新增
         try {
           const res: Res | undefined = await dispatch.sys.addUser(params);
           if (res && res.code === 0) {
-            message.success("添加成功");
+            message.success("创建成功");
             onGetData(page);
+            getAllAuthorityData();
             onClose();
           } else {
             message.error(res?.msg ?? "操作失败");
@@ -258,12 +338,15 @@ function UserAdminContainer(): JSX.Element {
         }
       } else {
         // 修改
-        params.id = modal.nowData?.id;
+        params.ID = modal.nowData?.ID as number;
         try {
-          const res: Res | undefined = await dispatch.sys.upUser(params);
+          const res: Res | undefined = await dispatch.sys.updateUserInfo(
+            params
+          );
           if (res && res.code === 0) {
-            message.success("修改成功");
+            message.success("编辑成功");
             onGetData(page);
+            getAllAuthorityData();
             onClose();
           } else {
             message.error(res?.msg ?? "操作失败");
@@ -279,6 +362,23 @@ function UserAdminContainer(): JSX.Element {
     }
   };
 
+  //重置用户密码
+  const onResetPassword = async (id: number): Promise<void> => {
+    setLoading(true);
+    try {
+      const res = await dispatch.sys.resetUserPassword({ ID: id });
+      if (res && res.code === 0) {
+        message.success("重置成功");
+        onGetData(page);
+        getAllAuthorityData();
+      } else {
+        message.error(res?.msg ?? "操作失败");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 删除某一条数据
   const onDel = async (id: number): Promise<void> => {
     setLoading(true);
@@ -287,6 +387,7 @@ function UserAdminContainer(): JSX.Element {
       if (res && res.code === 0) {
         message.success("删除成功");
         onGetData(page);
+        getAllAuthorityData();
       } else {
         message.error(res?.msg ?? "操作失败");
       }
@@ -307,6 +408,11 @@ function UserAdminContainer(): JSX.Element {
     onGetData({ page, pageSize });
   };
 
+  // 获取用户头像数据页码改变
+  const onBackgroundImageChangePage = async (page: number, pageSize: number): Promise<void> => {
+    onGetBackgroundImageData({page,pageSize});
+  };
+
   // ==================
   // 属性 和 memo
   // ==================
@@ -318,8 +424,8 @@ function UserAdminContainer(): JSX.Element {
       dataIndex: "headerImg",
       key: "headerImg",
       render: (v: null) => {
-        return <img src={v} className={"header-img-box"}/>
-      }
+        return <img src={v} className={"header-img-box"} />;
+      },
     },
     {
       title: "ID",
@@ -352,24 +458,29 @@ function UserAdminContainer(): JSX.Element {
       key: "authorities",
       render: (v: any, record: TableRecordData): JSX.Element => {
         const onChange = (value: number[][]) => {
-          setUserAuthorities({ID: record.ID, authorityIds: value[0]});
+          setUserAuthorities({ ID: record.ID, authorityIds: value[0] });
         };
         const authorities: number[] = [];
-        v.forEach( (authority) => {
+        v.forEach((authority) => {
           authorities.push(authority.authorityId);
         });
         return (
           <Cascader
-          multiple={{ checkStrictly: true }}
-          options={role.roleData}
-          onChange={onChange}
-          showCheckedStrategy={SHOW_CHILD}
-          maxTagCount="responsive"
-          defaultValue={authorities}
-          expandTrigger={"hover"}
-          fieldNames={{ label: 'authorityName', value: 'authorityId', children: 'children' }}
-          />)
-      }
+            multiple
+            options={role.roleData}
+            onChange={onChange}
+            showCheckedStrategy={SHOW_CHILD}
+            maxTagCount="responsive"
+            defaultValue={authorities}
+            expandTrigger={"hover"}
+            fieldNames={{
+              label: "authorityName",
+              value: "authorityId",
+              children: "children",
+            }}
+          />
+        );
+      },
     },
     {
       title: "状态",
@@ -377,17 +488,22 @@ function UserAdminContainer(): JSX.Element {
       key: "enable",
       render: (v: number, record: TableRecordData): JSX.Element => {
         const onUserStatus = (checked: boolean) => {
-          setUserStatus( {
+          setUserStatus({
             ID: record.ID,
             enable: checked ? 1 : 2,
             email: record.email,
             headerImg: record.headerImg,
+            userName: record.userName,
             nickName: record.nickName,
             phone: record.phone,
-          })
+            password: "",
+            authorityIds: [],
+          });
         };
-        return <Switch checked={v === 1 ? true: false} onChange={onUserStatus}/>
-      }
+        return (
+          <Switch checked={v === 1 ? true : false} onChange={onUserStatus} />
+        );
+      },
     },
     {
       title: "操作",
@@ -419,6 +535,23 @@ function UserAdminContainer(): JSX.Element {
                 <ToolOutlined />
               </Tooltip>
             </span>
+          );
+
+        p.includes("user:resetpass") &&
+          controls.push(
+            <Popconfirm
+              key="2"
+              title="是否将此用户密码重置为123456?"
+              onConfirm={() => onResetPassword(record.ID)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <span key="2" className="control-btn blue">
+                <Tooltip placement="top" title="重置密码">
+                  <EditOutlined />
+                </Tooltip>
+              </span>
+            </Popconfirm>
           );
 
         p.includes("user:del") &&
@@ -453,8 +586,8 @@ function UserAdminContainer(): JSX.Element {
 
   // 用户角色权限设置
   if (!p.includes("user:role")) {
-    tableColumns = tableColumns.filter( (data) => data.key !== "authorities")
-  };
+    tableColumns = tableColumns.filter((data) => data.key !== "authorities");
+  }
   // table列表所需数据
   const tableData = useMemo(() => {
     return data.map((item, index) => {
@@ -475,6 +608,10 @@ function UserAdminContainer(): JSX.Element {
       };
     });
   }, [page, data]);
+
+  const backgroundOnChange = async (name: string, value: string): Promise<void> => {
+
+  };
 
   return (
     <div>
@@ -508,6 +645,21 @@ function UserAdminContainer(): JSX.Element {
         />
       </div>
 
+      <Modal
+        open={backgroundVisible}
+        footer={
+          <Pagination
+            current={backgroundPage.page}
+            defaultPageSize={backgroundPage.pageSize}
+            total={backgroundPage.total}
+            size="large"
+            onChange={onBackgroundImageChangePage}
+          />
+        }
+        onCancel={onCancel}
+      >
+      </Modal>
+
       {/* 新增&修改&查看 模态框 */}
       <Modal
         title={{ add: "新增", up: "修改", see: "查看" }[modal.operateType]}
@@ -527,13 +679,19 @@ function UserAdminContainer(): JSX.Element {
             name="userName"
             {...formItemLayout}
             rules={[
-              { required: true, whitespace: true, message: "必填" },
+              {
+                required: modal.operateType === "add" ? true : false,
+                whitespace: true,
+                message: "必填",
+              },
               { max: 12, message: "最多输入12位字符" },
             ]}
           >
             <Input
               placeholder="请输入用户名"
-              disabled={modal.operateType === "see"}
+              disabled={
+                modal.operateType === "see" || modal.operateType === "up"
+              }
             />
           </Form.Item>
           <Form.Item
@@ -541,10 +699,15 @@ function UserAdminContainer(): JSX.Element {
             name="password"
             {...formItemLayout}
             rules={[
-              { required: true, whitespace: true, message: "必填" },
+              {
+                required: modal.operateType === "add" ? true : false,
+                whitespace: true,
+                message: "必填",
+              },
               { min: 6, message: "最少输入6位字符" },
               { max: 18, message: "最多输入18位字符" },
             ]}
+            style={{ display: modal.operateType !== "add" ? "none" : "" }}
           >
             <Input.Password
               placeholder="请输入密码"
@@ -552,7 +715,18 @@ function UserAdminContainer(): JSX.Element {
             />
           </Form.Item>
           <Form.Item
-            label="电话"
+            label="昵称"
+            name="nickName"
+            {...formItemLayout}
+            rules={[
+              { required: modal.operateType === "add" ? true : false },
+              { max: 100, message: "最多输入100个字符" },
+            ]}
+          >
+            <Input disabled={modal.operateType === "see"} />
+          </Form.Item>
+          <Form.Item
+            label="手机号"
             name="phone"
             {...formItemLayout}
             rules={[
@@ -599,33 +773,66 @@ function UserAdminContainer(): JSX.Element {
             />
           </Form.Item>
           <Form.Item
-            label="昵称"
-            name="nickName"
+            label="用户角色"
+            name="authorityIds"
             {...formItemLayout}
-            rules={[{ max: 100, message: "最多输入100个字符" }]}
+            rules={[{ required: true ? modal.operateType !== "see" : false }]}
+            disabled={modal.operateType === "see"}
           >
-            <Input
-              disabled={modal.operateType === "see"}
+            <Cascader
+              multiple
+              options={role.roleData}
+              showCheckedStrategy={SHOW_CHILD}
+              maxTagCount="responsive"
+              expandTrigger={"hover"}
+              fieldNames={{
+                label: "authorityName",
+                value: "authorityId",
+                children: "children",
+              }}
             />
           </Form.Item>
           <Form.Item
-            label="状态"
+            label="启用"
             name="enable"
             {...formItemLayout}
-            rules={[{ required: true, message: "请选择状态" }]}
+            disabled={modal.operateType === "see"}
           >
-            <Select disabled={modal.operateType === "see"}>
-              <Option key={1} value={1}>
-                启用
-              </Option>
-              <Option key={-1} value={-1}>
-                禁用
-              </Option>
-            </Select>
+            <Switch
+              checked={switchValue}
+              disabled={modal.operateType === "see"}
+              onChange={onSwitchValueChange}
+            />
+          </Form.Item>
+          <Form.Item
+            label="头像"
+            name="headerImg"
+            {...formItemLayout}
+            disabled={modal.operateType === "see"}
+          >
+            <>
+              <img
+                alt="头像"
+                className="header-img-box-content"
+                src={modal.nowData?.headerImg}
+                style={{
+                  display:
+                    modal.operateType === "add" ||
+                    modal.nowData?.headerImg === ""
+                      ? "none"
+                      : "",
+                }}
+              />
+              <div
+                className="header-img-box-content"
+                style={{ display: modal.operateType !== "add" ? "none" : "" }}
+              >
+                从媒体库选择
+              </div>
+            </>
           </Form.Item>
         </Form>
       </Modal>
-
     </div>
   );
 }

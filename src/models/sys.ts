@@ -355,15 +355,22 @@ export default {
     /**
      * 条件分页查询用户列表
      * **/
-    async getUserList(params: {
-      page: number;
-      pageSize: number;
-    }) {
+    async getBackgroundImageList(params: { page: number; pageSize: number }) {
       try {
-        const res: Res = await axios.post(
-          "/api/user/getUserList",
-          params
-        );
+        const res: Res = await axios.post("/api/fileUploadAndDownload/getFileList", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
+     * 条件分页查询用户列表
+     * **/
+    async getUserList(params: { page: number; pageSize: number }) {
+      try {
+        const res: Res = await axios.post("/api/user/getUserList", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -374,9 +381,20 @@ export default {
     /**
      * 添加用户
      * **/
-    async addUser(params: UserBasicInfoParam) {
+    async addUser(params: {
+      ID: number;
+      enable: number;
+      email: string;
+      headerImg: string;
+      nickName: string;
+      userName: string;
+      phone: string | number;
+      password: string;
+      authorityIds: number[];
+    }) {
       try {
-        const res: Res = await axios.post("/api/addUser", params);
+        params["authorityId"] = params.authorityIds[0];
+        const res: Res = await axios.post("/api/user/admin_register", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -385,11 +403,11 @@ export default {
     },
 
     /**
-     * 修改用户
+     * 重置用户密码
      * **/
-    async upUser(params: UserBasicInfoParam) {
+    async resetUserPassword(params: { ID: number }) {
       try {
-        const res: Res = await axios.post("/api/upUser", params);
+        const res: Res = await axios.post("/api/user/resetPassword", params);
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -402,21 +420,9 @@ export default {
      * **/
     async delUser(params: { id: number }) {
       try {
-        const res: Res = await axios.post("/api/delUser", params);
-        return res;
-      } catch (err) {
-        message.error("网络错误，请重试");
-      }
-      return;
-    },
-
-    /**
-     * 给用户分配角色
-     * 用的也是upUser接口
-     * **/
-    async setUserRoles(params: { id: number; roles: number[] }) {
-      try {
-        const res: Res = await axios.post("/api/upUser", params);
+        const res: Res = await axios.delete("/api/user/deleteUser", {
+          data: params,
+        });
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -424,9 +430,19 @@ export default {
       return;
     },
     /**
-     * 设置用户开启关闭状态
+     * 修改用户信息
      * **/
-    async setUserStatus(params: { ID: number; enable: number, email: string, headerImg: string,nickName: string, phone: string | number }) {
+    async updateUserInfo(params: {
+      ID: number;
+      enable: number;
+      email: string;
+      headerImg: string;
+      nickName: string;
+      userName: string;
+      phone: string | number;
+      password: string;
+      authorityIds: number[];
+    }) {
       try {
         const res: Res = await axios.put("/api/user/setUserInfo", params);
         return res;
@@ -438,9 +454,12 @@ export default {
     /**
      * 设置用户角色
      * **/
-    async setUserAuthorities(params: {ID: number, authorityIds: number[]}) {
+    async setUserAuthorities(params: { ID: number; authorityIds: number[] }) {
       try {
-        const res: Res = await axios.post("/api/user/setUserAuthorities", params);
+        const res: Res = await axios.post(
+          "/api/user/setUserAuthorities",
+          params
+        );
         return res;
       } catch (err) {
         message.error("网络错误，请重试");

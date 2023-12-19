@@ -36,7 +36,7 @@ function LoginContainer(): JSX.Element {
     }
   };
 
-  useMount( () => {
+  useMount(() => {
     //设置初始化的验证码
     onGetCaptcha();
   });
@@ -103,7 +103,7 @@ function LoginContainer(): JSX.Element {
         const menu = [];
         res2.data.menus.map((data) => {
           let parent = null;
-          const parentPath = `/${data.path}`
+          const parentPath = `/${data.path}`;
           if (!data.hidden) {
             menu.push({
               id: data.ID,
@@ -116,9 +116,17 @@ function LoginContainer(): JSX.Element {
               conditions: 1,
             });
             if (data.btns) {
-              Object.keys(data.btns).map( (btn) => {
-                powers.push({ conditions: 1, desc: "", menu: 0, sorts: 0, title: "", code: btn, id: data.ID })
-              })
+              Object.keys(data.btns).map((btn) => {
+                powers.push({
+                  conditions: 1,
+                  desc: "",
+                  menu: 0,
+                  sorts: 0,
+                  title: "",
+                  code: btn,
+                  id: data.ID,
+                });
+              });
             }
           }
           if (data.children) {
@@ -136,9 +144,17 @@ function LoginContainer(): JSX.Element {
                   conditions: 1,
                 });
                 if (child.btns) {
-                  Object.keys(child.btns).map( (btn) => {
-                    powers.push({ conditions: 1, desc: "", menu: 0, sorts: 0, title: "", code: btn, id: child.ID })
-                  })
+                  Object.keys(child.btns).map((btn) => {
+                    powers.push({
+                      conditions: 1,
+                      desc: "",
+                      menu: 0,
+                      sorts: 0,
+                      title: "",
+                      code: btn,
+                      id: child.ID,
+                    });
+                  });
                 }
               }
             });

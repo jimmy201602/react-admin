@@ -1,6 +1,6 @@
 /** 当前页面所需所有类型声明 **/
 
-import { Role, UserBasicInfoParam } from "@/models/index.type";
+import { UserBasicInfoParam } from "@/models/index.type";
 
 export type { UserBasicInfoParam, Res } from "@/models/index.type";
 
@@ -31,14 +31,7 @@ export type operateType = "add" | "see" | "up";
 
 export type ModalType = {
   operateType: operateType;
-  nowData: UserBasicInfoParam | null;
+  nowData: TableRecordData | null;
   modalShow: boolean;
   modalLoading: boolean;
-};
-
-export type RoleTreeInfo = {
-  roleData: Role[]; // 所有的角色数据
-  roleTreeLoading: boolean; // 控制树的loading状态，因为要先加载当前role的菜单，才能显示树
-  roleTreeShow: boolean; // 角色树是否显示
-  roleTreeDefault: number[]; // 用于角色树，默认需要选中的项
 };

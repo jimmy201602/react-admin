@@ -126,7 +126,7 @@ function RouterCom(): JSX.Element {
           }
         />
         <Route
-          path="system/useradmin"
+          path="admin/user"
           element={
             <AuthNoPower>
               <UserAdmin />
