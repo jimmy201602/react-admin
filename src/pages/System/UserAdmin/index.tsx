@@ -283,7 +283,6 @@ function UserAdminContainer(): JSX.Element {
     setSwitchValue(checked);
   };
 
-  // 修改用户角色后表格数据没有进行自动刷新
   /** 模态框确定 **/
   const onOk = async (): Promise<void> => {
     if (modal.operateType === "see") {
@@ -474,7 +473,7 @@ function UserAdminContainer(): JSX.Element {
             onChange={onChange}
             showCheckedStrategy={SHOW_ALL}
             maxTagCount="responsive"
-            defaultValue={authorities}
+            value={authorities}
             fieldNames={{
               label: "authorityName",
               value: "authorityId",
