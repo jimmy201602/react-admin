@@ -17,8 +17,8 @@ import {
   Tooltip,
   Divider,
   Switch,
-  Cascader,
-  Pagination, Row, Col,
+  Pagination,
+  TreeSelect,
 } from "antd";
 import {
   EyeOutlined,
@@ -107,7 +107,7 @@ function UserAdminContainer(): JSX.Element {
     modalLoading: false,
   });
 
-  const { SHOW_CHILD } = Cascader;
+  const { SHOW_ALL } = TreeSelect;
 
   // 生命周期 - 组件挂载时触发一次
   useMount(() => {
@@ -139,7 +139,7 @@ function UserAdminContainer(): JSX.Element {
     userName: string;
     phone: string | number;
     password: string;
-    authorityIds: [];
+    authorityIds: number[];
   }): Promise<void> => {
     try {
       const res = await dispatch.sys.updateUserInfo(params);
@@ -156,8 +156,7 @@ function UserAdminContainer(): JSX.Element {
     }
   };
 
-  // 函数 - 设置用户角色 bug需修复和权限菜单的联动
-  // https://github.com/ant-design/ant-design/pull/39818
+  // 函数 - 设置用户角色
   const setUserAuthorities = async (params: {
     ID: number;
     authorityIds: number[];
@@ -274,7 +273,7 @@ function UserAdminContainer(): JSX.Element {
           authorities.push(authority.authorityId);
         });
         form.setFieldsValue({
-          authorityIds: [authorities],
+          authorityIds: authorities,
         });
       }
     });
@@ -284,6 +283,7 @@ function UserAdminContainer(): JSX.Element {
     setSwitchValue(checked);
   };
 
+  // 修改用户角色后表格数据没有进行自动刷新
   /** 模态框确定 **/
   const onOk = async (): Promise<void> => {
     if (modal.operateType === "see") {
@@ -314,7 +314,7 @@ function UserAdminContainer(): JSX.Element {
         userName: values.userName,
         phone: values.phone,
         password: values.password,
-        authorityIds: values.authorityIds[0],
+        authorityIds: values.authorityIds,
       };
       if (values.enable) {
         params.enable = 1;
@@ -457,22 +457,24 @@ function UserAdminContainer(): JSX.Element {
       dataIndex: "authorities",
       key: "authorities",
       render: (v: any, record: TableRecordData): JSX.Element => {
-        const onChange = (value: number[][]) => {
-          setUserAuthorities({ ID: record.ID, authorityIds: value[0] });
+        const onChange = (value: number[] )=> {
+          setUserAuthorities({ ID: record.ID, authorityIds: value });
         };
         const authorities: number[] = [];
         v.forEach((authority) => {
           authorities.push(authority.authorityId);
         });
         return (
-          <Cascader
+          <TreeSelect
             multiple
-            options={role.roleData}
+            allowClear
+            treeDefaultExpandAll
+            style={{ width: '100%' }}
+            treeData={role.roleData}
             onChange={onChange}
-            showCheckedStrategy={SHOW_CHILD}
+            showCheckedStrategy={SHOW_ALL}
             maxTagCount="responsive"
             defaultValue={authorities}
-            expandTrigger={"hover"}
             fieldNames={{
               label: "authorityName",
               value: "authorityId",
@@ -612,7 +614,6 @@ function UserAdminContainer(): JSX.Element {
   const backgroundOnChange = async (name: string, value: string): Promise<void> => {
 
   };
-
   return (
     <div>
       <div className="g-search">
@@ -779,12 +780,14 @@ function UserAdminContainer(): JSX.Element {
             rules={[{ required: true ? modal.operateType !== "see" : false }]}
             disabled={modal.operateType === "see"}
           >
-            <Cascader
+            <TreeSelect
               multiple
-              options={role.roleData}
-              showCheckedStrategy={SHOW_CHILD}
+              allowClear
+              treeDefaultExpandAll
+              style={{ width: '100%' }}
+              treeData={role.roleData}
+              showCheckedStrategy={SHOW_ALL}
               maxTagCount="responsive"
-              expandTrigger={"hover"}
               fieldNames={{
                 label: "authorityName",
                 value: "authorityId",
