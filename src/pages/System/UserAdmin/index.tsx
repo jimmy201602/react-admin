@@ -3,35 +3,51 @@
 // ==================
 // 所需的第三方库
 // ==================
-import React, { useState, useMemo } from "react";
-import { useSetState, useMount } from "react-use";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useMemo, useState } from "react";
+import { useMount, useSetState } from "react-use";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  Form,
   Button,
-  Input,
-  Table,
-  message,
-  Popconfirm,
-  Modal,
-  Tooltip,
   Divider,
-  Switch,
+  Form,
+  Input,
+  message,
+  Modal,
   Pagination,
+  Switch,
+  Table,
+  Tooltip,
   TreeSelect,
 } from "antd";
 import {
-  EyeOutlined,
-  EditOutlined,
-  ToolOutlined,
   DeleteOutlined,
+  ExclamationCircleOutlined,
+  EyeOutlined,
   PlusCircleOutlined,
+  ReloadOutlined,
+  ToolOutlined,
 } from "@ant-design/icons";
 
 // ==================
 // 所需的自定义的东西
 // ==================
 import tools from "@/util/tools"; // 工具函数
+// ==================
+// 类型声明
+// ==================
+import {
+  ModalType,
+  operateType,
+  Page,
+  Res,
+  TableRecordData,
+} from "./index.type";
+import { Dispatch, RootState } from "@/store";
+
+// ==================
+// CSS
+// ==================
+import "./index.less";
 
 const formItemLayout = {
   labelCol: {
@@ -43,23 +59,6 @@ const formItemLayout = {
     sm: { span: 19 },
   },
 };
-
-// ==================
-// 类型声明
-// ==================
-import {
-  TableRecordData,
-  Page,
-  operateType,
-  ModalType,
-  Res,
-} from "./index.type";
-import { RootState, Dispatch } from "@/store";
-
-// ==================
-// CSS
-// ==================
-import "./index.less";
 
 // ==================
 // 本组件
@@ -190,7 +189,9 @@ function UserAdminContainer(): JSX.Element {
     };
     setLoading(true);
     try {
-      const res = await dispatch.sys.getBackgroundImageList(tools.clearNull(params));
+      const res = await dispatch.sys.getBackgroundImageList(
+        tools.clearNull(params)
+      );
       if (res && res.code === 0) {
         setBackgroundImageData(res.data.list);
         setBackgroundPage({
@@ -204,7 +205,7 @@ function UserAdminContainer(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   // 函数 - 查询当前页面所需列表数据
   async function onGetData(page: {
@@ -235,7 +236,7 @@ function UserAdminContainer(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const onCancel = async (): Promise<void> => {
     setBackgroundVisible(false);
@@ -258,7 +259,7 @@ function UserAdminContainer(): JSX.Element {
     // 用setTimeout是因为首次让Modal出现时得等它挂载DOM，不然form对象还没来得及挂载到Form上
     setTimeout(() => {
       if (data) {
-        setSwitchValue(true ? data.enable === 1 : false);
+        setSwitchValue(data.enable === 1);
       }
       if (type === "add") {
         // 新增，需重置表单各控件的值
@@ -362,7 +363,7 @@ function UserAdminContainer(): JSX.Element {
   };
 
   //重置用户密码
-  const onResetPassword = async (id: number): Promise<void> => {
+  const onResetPasswordChange = async (id: number): Promise<void> => {
     setLoading(true);
     try {
       const res = await dispatch.sys.resetUserPassword({ ID: id });
@@ -378,8 +379,20 @@ function UserAdminContainer(): JSX.Element {
     }
   };
 
+  //重置用户密码
+  const onResetPassword = async (id: number): Promise<void> => {
+    Modal.confirm({
+      title: "提示",
+      icon: <ExclamationCircleOutlined />,
+      content: "是否将此用户密码重置为123456?",
+      onOk: () => {
+        onResetPasswordChange(id);
+      },
+    });
+  };
+
   // 删除某一条数据
-  const onDel = async (id: number): Promise<void> => {
+  const onDelUser = async (id: number): Promise<void> => {
     setLoading(true);
     try {
       const res = await dispatch.sys.delUser({ id });
@@ -395,6 +408,18 @@ function UserAdminContainer(): JSX.Element {
     }
   };
 
+  //删除用户
+  const onDel = async (id: number): Promise<void> => {
+    Modal.confirm({
+      title: "提示",
+      icon: <ExclamationCircleOutlined />,
+      content: "确定删除吗?",
+      onOk: () => {
+        onDelUser(id);
+      },
+    });
+  };
+
   /** 模态框关闭 **/
   const onClose = () => {
     setModal({
@@ -408,8 +433,11 @@ function UserAdminContainer(): JSX.Element {
   };
 
   // 获取用户头像数据页码改变
-  const onBackgroundImageChangePage = async (page: number, pageSize: number): Promise<void> => {
-    onGetBackgroundImageData({page,pageSize});
+  const onBackgroundImageChangePage = async (
+    page: number,
+    pageSize: number
+  ): Promise<void> => {
+    onGetBackgroundImageData({ page, pageSize });
   };
 
   // ==================
@@ -456,7 +484,7 @@ function UserAdminContainer(): JSX.Element {
       dataIndex: "authorities",
       key: "authorities",
       render: (v: any, record: TableRecordData): JSX.Element => {
-        const onChange = (value: number[] )=> {
+        const onChange = (value: number[]) => {
           setUserAuthorities({ ID: record.ID, authorityIds: value });
         };
         const authorities: number[] = [];
@@ -468,7 +496,7 @@ function UserAdminContainer(): JSX.Element {
             multiple
             allowClear
             treeDefaultExpandAll
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
             treeData={role.roleData}
             onChange={onChange}
             showCheckedStrategy={SHOW_ALL}
@@ -509,7 +537,7 @@ function UserAdminContainer(): JSX.Element {
     {
       title: "操作",
       key: "control",
-      width: 200,
+      width: "20%",
       render: (v: null, record: TableRecordData) => {
         const controls = [];
         const u = userinfo.userBasicInfo || { ID: -1 };
@@ -522,6 +550,7 @@ function UserAdminContainer(): JSX.Element {
             >
               <Tooltip placement="top" title="查看">
                 <EyeOutlined />
+                {/*<a>查看</a>*/}
               </Tooltip>
             </span>
           );
@@ -534,43 +563,34 @@ function UserAdminContainer(): JSX.Element {
             >
               <Tooltip placement="top" title="修改">
                 <ToolOutlined />
+                {/*<a>修改</a>*/}
               </Tooltip>
             </span>
           );
 
         p.includes("user:resetpass") &&
           controls.push(
-            <Popconfirm
+            <span
               key="2"
-              title="是否将此用户密码重置为123456?"
-              onConfirm={() => onResetPassword(record.ID)}
-              okText="确定"
-              cancelText="取消"
+              className="control-btn blue"
+              onClick={() => onResetPassword(record.ID)}
             >
-              <span key="2" className="control-btn blue">
-                <Tooltip placement="top" title="重置密码">
-                  <EditOutlined />
-                </Tooltip>
-              </span>
-            </Popconfirm>
+              <Tooltip placement="top" title="重置密码">
+                <ReloadOutlined />
+                {/*<a>重置密码</a>*/}
+              </Tooltip>
+            </span>
           );
 
         p.includes("user:del") &&
           u.ID !== record.ID &&
           controls.push(
-            <Popconfirm
-              key="3"
-              title="确定删除吗?"
-              onConfirm={() => onDel(record.ID)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <span className="control-btn red">
-                <Tooltip placement="top" title="删除">
-                  <DeleteOutlined />
-                </Tooltip>
-              </span>
-            </Popconfirm>
+            <span className="control-btn red" onClick={() => onDel(record.ID)}>
+              <Tooltip placement="top" title="删除">
+                <DeleteOutlined />
+                {/*<a>删除</a>*/}
+              </Tooltip>
+            </span>
           );
 
         const result: JSX.Element[] = [];
@@ -610,9 +630,10 @@ function UserAdminContainer(): JSX.Element {
     });
   }, [page, data]);
 
-  const backgroundOnChange = async (name: string, value: string): Promise<void> => {
-
+  const backgroundOnChange = async (name, value: string): Promise<void> => {
+    console.log(name, value);
   };
+
   return (
     <div>
       <div className="g-search">
@@ -634,6 +655,9 @@ function UserAdminContainer(): JSX.Element {
           columns={tableColumns}
           loading={loading}
           dataSource={tableData}
+          rowKey={(record) => {
+            return record.key;
+          }}
           pagination={{
             total: page.total,
             current: page.page,
@@ -657,8 +681,7 @@ function UserAdminContainer(): JSX.Element {
           />
         }
         onCancel={onCancel}
-      >
-      </Modal>
+      ></Modal>
 
       {/* 新增&修改&查看 模态框 */}
       <Modal
@@ -776,14 +799,14 @@ function UserAdminContainer(): JSX.Element {
             label="用户角色"
             name="authorityIds"
             {...formItemLayout}
-            rules={[{ required: true ? modal.operateType !== "see" : false }]}
+            rules={[{ required: modal.operateType !== "see" }]}
             disabled={modal.operateType === "see"}
           >
             <TreeSelect
               multiple
               allowClear
               treeDefaultExpandAll
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               treeData={role.roleData}
               showCheckedStrategy={SHOW_ALL}
               maxTagCount="responsive"
