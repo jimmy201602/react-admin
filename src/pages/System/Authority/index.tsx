@@ -235,7 +235,7 @@ function AuthorityAdminContainer(): JSX.Element {
     }
     setLoading(true);
     try {
-      const res = await dispatch.sys.getApiList();
+      const res = await dispatch.sys.getAllApis();
       if (res && res.code === 0) {
         const apis = buildApiTree(res.data.apis);
         setApi(apis);
@@ -258,7 +258,7 @@ function AuthorityAdminContainer(): JSX.Element {
     try {
       const res = await dispatch.sys.getApiAuthorityList(params);
       // 垃圾代码，很丑的实现
-      const resApi = await dispatch.sys.getApiList();
+      const resApi = await dispatch.sys.getAllApis();
       if (resApi && resApi.code === 0) {
         if (res && res.code === 0) {
           const apiAuthorityData = [];

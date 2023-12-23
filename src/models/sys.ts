@@ -462,6 +462,19 @@ export default {
     },
 
     /**
+     * 查询所有的api列表
+     * **/
+    async getAllApis() {
+      try {
+        const res: Res = await axios.post("/api/api/getAllApis");
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
      * 条件分页查询api列表
      * **/
     async getApiList(params: {
