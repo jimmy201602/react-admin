@@ -149,7 +149,7 @@ function AuthorityAdminContainer(): JSX.Element {
     }
     setLoading(true);
     try {
-      const res = await dispatch.sys.getMenuList();
+      const res = await dispatch.sys.getBaseMenuTree();
       if (res && res.code === 0) {
         setMenu(res.data.menus);
       } else {
@@ -1011,7 +1011,9 @@ function AuthorityAdminContainer(): JSX.Element {
           onCancel={onRoleModalClose}
           confirmLoading={roleModal.modalLoading}
         >
-          <Form form={form}>
+          <Form
+            form={form}
+          >
             <Form.Item
               label="父级角色"
               name="parentId"
