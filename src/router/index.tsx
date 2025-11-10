@@ -40,25 +40,27 @@ const [
   NoPower,
   Login,
   Home,
-  MenuAdmin,
   PowerAdmin,
   RoleAdmin,
   UserAdmin,
   AuthorityAdmin,
   OperationAdmin,
   ApiAdmin,
+  MenuAdmin,
+  DictionaryAdmin,
 ] = [
   () => import("../pages/ErrorPages/404"),
   () => import("../pages/ErrorPages/401"),
   () => import("../pages/Login"),
   () => import("../pages/Home"),
-  () => import("../pages/System/MenuAdmin"),
   () => import("../pages/System/PowerAdmin"),
   () => import("../pages/System/RoleAdmin"),
   () => import("../pages/System/UserAdmin"),
   () => import("../pages/System/Authority"),
   () => import("../pages/System/Operation"),
   () => import("../pages/System/Api"),
+  () => import("../pages/System/Menu"),
+  () => import("../pages/System/Dictionary"),
 ].map((item) => {
   return loadable(item as any, {
     fallback: <Loading />,
@@ -107,14 +109,14 @@ function RouterCom(): JSX.Element {
       >
         <Route path="/" element={<Navigate to="home" />} />
         <Route path="home" element={<Home />} />
-        <Route
-          path="system/menuadmin"
-          element={
-            <AuthNoPower>
-              <MenuAdmin />
-            </AuthNoPower>
-          }
-        />
+        {/*<Route*/}
+        {/*  path="system/menuadmin"*/}
+        {/*  element={*/}
+        {/*    <AuthNoPower>*/}
+        {/*      <MenuAdmin />*/}
+        {/*    </AuthNoPower>*/}
+        {/*  }*/}
+        {/*/>*/}
         <Route
           path="system/poweradmin"
           element={
@@ -160,6 +162,22 @@ function RouterCom(): JSX.Element {
           element={
             <AuthNoPower>
               <ApiAdmin />
+            </AuthNoPower>
+          }
+        />
+        <Route
+          path="admin/menu"
+          element={
+            <AuthNoPower>
+              <MenuAdmin />
+            </AuthNoPower>
+          }
+        />
+        <Route
+          path="admin/dictionary"
+          element={
+            <AuthNoPower>
+              <DictionaryAdmin />
             </AuthNoPower>
           }
         />

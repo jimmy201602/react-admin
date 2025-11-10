@@ -656,7 +656,7 @@ function UserAdminContainer(): JSX.Element {
           loading={loading}
           dataSource={tableData}
           rowKey={(record) => {
-            return record.key;
+            return record.ID;
           }}
           pagination={{
             total: page.total,

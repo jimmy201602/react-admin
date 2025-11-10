@@ -14,6 +14,7 @@ import { CheckboxChangeEvent } from "antd/lib/checkbox";
 
 import "./index.less";
 import { useMount } from "react-use";
+import { cloneDeep } from "lodash";
 
 function LoginContainer(): JSX.Element {
   const dispatch = useDispatch<Dispatch>();
@@ -61,6 +62,70 @@ function LoginContainer(): JSX.Element {
     setShow(true);
   }, [form]);
 
+  /** 工具 - 递归将扁平数据转换为层级数据 **/
+  const dataToJson = useCallback((one: any | undefined, data: any[]) => {
+    let kids;
+    if (!one) {
+      // 第1次递归
+      kids = data.filter((item: any) => item.parentId === "0");
+    } else {
+      kids = data.filter((item: any) => item.parentId === String(one.ID));
+    }
+    kids.forEach((item: any) => {
+      item.children = dataToJson(item, data);
+      item.key = item.ID;
+    });
+    return kids.length ? kids : undefined;
+  }, []);
+
+  // ==================
+  // 计算属性 memo
+  // ==================
+
+  // 工具 - 赋值Key
+  const menuData: any[] = [];
+  const makeKey = useCallback((data: any[]) => {
+    for (let i = 0; i < data.length; i++) {
+      const item: any = { ...data[i] };
+
+      const treeItem: any = {
+        // ...item,
+        key: item.ID,
+        id: item.ID,
+        title: item.meta.title,
+        icon: item.meta.icon,
+        url: item.path,
+        parent: item.parentId === "0" ? null : item.ID, //data.parentId
+        parentPath: item.path === "" ? "" : item.path,
+        desc: "",
+        sorts: item.sort,
+        conditions: 1,
+        btns: item.btns,
+      };
+      if (item.parentId !== "0") {
+        let parentData;
+        parentData = menuData.find(
+          (it: any) => String(it.id) === String(item.parentId)
+        );
+        treeItem.parentPath = `${parentData.parentPath}/${item.path}`;
+        treeItem.url = `${parentData.parentPath}/${item.path}`;
+        treeItem.parent = parentData.id;
+      } else {
+        treeItem.parentPath = `/${item.path}`;
+        treeItem.url = `${item.path}`;
+      }
+      if (!item.hidden) {
+        menuData.push(treeItem);
+      }
+
+      if (item.children && !item.hidden) {
+        item.children = makeKey(item.children);
+      }
+    }
+    // console.log("menuData",menuData);
+    return menuData;
+  }, []);
+
   /**
    * 执行登录
    * 1.登录，得到用户信息
@@ -100,66 +165,32 @@ function LoginContainer(): JSX.Element {
       /** 2.查询用户的权限菜单 **/
       const res2: Res | undefined = await dispatch.sys.getMenu();
       if (res2 && res2.code === 0) {
-        const menu = [];
-        res2.data.menus.map((data) => {
-          let parent = null;
-          const parentPath = `/${data.path}`;
-          if (!data.hidden) {
-            menu.push({
-              id: data.ID,
-              title: data.meta.title,
-              icon: data.meta.icon,
-              url: data.path,
-              parent: parent, //data.parentId
-              desc: "",
-              sorts: data.sort,
-              conditions: 1,
-            });
-            if (data.btns) {
-              Object.keys(data.btns).map((btn) => {
-                powers.push({
-                  conditions: 1,
-                  desc: "",
-                  menu: 0,
-                  sorts: 0,
-                  title: "",
-                  code: btn,
-                  id: data.ID,
-                });
+        // 这应该递归，把children数据也赋值key
+        const menu: any[] = makeKey(cloneDeep(res2.data.menus));
+        // 按照sort排序
+        // console.log("makekey",menu);
+        menu.sort((a, b) => {
+          return a.sort - b.sort;
+        });
+        // 生成权限按钮列表数据
+        menuData.map((item) => {
+          if (item.btns) {
+            Object.keys(item.btns).map((btn) => {
+              powers.push({
+                conditions: 1,
+                desc: "",
+                menu: 0,
+                sorts: 0,
+                title: "",
+                code: btn,
+                id: item.id,
               });
-            }
-          }
-          if (data.children) {
-            parent = data.ID;
-            data.children.map((child) => {
-              if (!child.hidden) {
-                menu.push({
-                  id: child.ID,
-                  title: child.meta.title,
-                  icon: child.meta.icon,
-                  url: `${parentPath}/${child.path}`,
-                  parent: parent,
-                  desc: "",
-                  sorts: child.sort,
-                  conditions: 1,
-                });
-                if (child.btns) {
-                  Object.keys(child.btns).map((btn) => {
-                    powers.push({
-                      conditions: 1,
-                      desc: "",
-                      menu: 0,
-                      sorts: 0,
-                      title: "",
-                      code: btn,
-                      id: child.ID,
-                    });
-                  });
-                }
-              }
             });
           }
         });
+
+        // console.log("menu", menu);
+        console.log("powers", powers);
         return {
           code: 0,
           data: {

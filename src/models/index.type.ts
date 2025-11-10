@@ -1,6 +1,7 @@
 // 菜单添加，修改时的参数类型
 export interface MenuParam {
   id?: number; // ID,添加时可以没有id
+  ID?: number; // ID
   title: string; // 标题
   icon: string; // 图标
   url: string; // 链接路径

@@ -1,4 +1,15 @@
-import { Button, Divider, Form, Input, message, Modal, Popover, Table, Tag, Tooltip } from "antd";
+import {
+  Button,
+  Divider,
+  Form,
+  Input,
+  message,
+  Modal,
+  Popover,
+  Table,
+  Tag,
+  Tooltip,
+} from "antd";
 import {
   DeleteOutlined,
   ExclamationCircleOutlined,
@@ -9,7 +20,11 @@ import {
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "@/store";
-import { Page, SearchInfo, TableRecordData } from "@/pages/System/Operation/index.type";
+import {
+  Page,
+  SearchInfo,
+  TableRecordData,
+} from "@/pages/System/Operation/index.type";
 import tools from "@/util/tools";
 import { useMount, useSetState } from "react-use";
 
@@ -58,8 +73,7 @@ function OperationAdminContainer(): JSX.Element {
       } else {
         message.error(res?.msg ?? "数据获取失败");
       }
-    } catch {
-    }
+    } catch {}
   };
 
   //批量删除选择的数据
@@ -89,8 +103,7 @@ function OperationAdminContainer(): JSX.Element {
       } else {
         message.error(res?.msg ?? "数据获取失败");
       }
-    } catch {
-    }
+    } catch {}
   };
 
   //删除单条选择的数据
@@ -196,7 +209,7 @@ function OperationAdminContainer(): JSX.Element {
     setLoading(true);
     try {
       const res = await dispatch.sys.getSysOperationRecordList(
-        tools.clearNull(params),
+        tools.clearNull(params)
       );
       if (res && res.code === 0) {
         setData(res.data.list);

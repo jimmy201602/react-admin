@@ -41,6 +41,11 @@ export default function MenuCom(props: Props): JSX.Element {
   useEffect(() => {
     const paths = location.pathname.split("/").filter((item) => !!item);
     setChosedKey([location.pathname]);
+    if (paths.length > 0) {
+      if (paths[0] === "http:" || paths[0] === "https:") {
+        window.open(location.pathname.substring(1), "_blank")?.focus();
+      }
+    }
     setOpenKeys(paths.map((item) => `/${item}`));
   }, [location]);
 
@@ -92,11 +97,12 @@ export default function MenuCom(props: Props): JSX.Element {
         return {
           label: (
             <>
-              {!item.parent && item.icon ? <Icon type={item.icon} /> : null}
+              {item.parent && item.icon ? <Icon type={item.icon} /> : null}
               <span>{item.title}</span>
             </>
           ),
           key: item.url,
+          children: undefined,
         };
       }
     });
@@ -115,6 +121,7 @@ export default function MenuCom(props: Props): JSX.Element {
     });
     const sourceData: Menu[] = dataToJson(undefined, d) || [];
     const treeDom = makeTreeDom(sourceData);
+    // console.log("treeDom",treeDom)
     return treeDom;
   }, [props.data, dataToJson, makeTreeDom]);
 

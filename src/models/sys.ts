@@ -352,6 +352,94 @@ export default {
     },
 
     /**
+     * 新增菜单
+     * **/
+    async addBaseMenu(params: {
+      ID: number;
+      component: string;
+      hidden: boolean;
+      menuBtn: any[];
+      meta: {
+        activeName: string;
+        keepAlive: boolean;
+        defaultMenu: boolean;
+        title: string;
+        icon: string;
+        closeTab: boolean;
+      };
+      name: string;
+      parameters: any[];
+      parentId: string;
+      path: string;
+      sort: number;
+    }) {
+      try {
+        const res: Res = await axios.post("/api/menu/addBaseMenu", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
+     * 更新菜单
+     * **/
+    async updateBaseMenu(params: {
+      ID: number;
+      component: string;
+      hidden: boolean;
+      menuBtn: any[];
+      meta: {
+        activeName: string;
+        keepAlive: boolean;
+        defaultMenu: boolean;
+        title: string;
+        icon: string;
+        closeTab: boolean;
+      };
+      name: string;
+      parameters: any[];
+      parentId: string;
+      path: string;
+      sort: number;
+    }) {
+      try {
+        const res: Res = await axios.post("/api/menu/updateBaseMenu", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
+     * 删除菜单
+     * **/
+    async deleteBaseMenu(params: { ID: number }) {
+      try {
+        const res: Res = await axios.post("/api/menu/deleteBaseMenu", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
+     * 条件分页查询菜单列表
+     * **/
+    async getMenuList(params: { page: number; pageSize: number }) {
+      try {
+        const res: Res = await axios.post("/api/menu/getMenuList", params);
+        return res;
+      } catch (err) {
+        message.error("网络错误，请重试");
+      }
+      return;
+    },
+
+    /**
      * 删除用户操作日志列表
      * **/
     async deleteSysOperationRecord(params: { ID: number }) {
@@ -401,10 +489,9 @@ export default {
      * **/
     async deleteApisByIds(params: { ids: number[] }) {
       try {
-        const res: Res = await axios.delete(
-          "/api/api/deleteApisByIds",
-          { data: params }
-        );
+        const res: Res = await axios.delete("/api/api/deleteApisByIds", {
+          data: params,
+        });
         return res;
       } catch (err) {
         message.error("网络错误，请重试");
@@ -482,7 +569,7 @@ export default {
       pageSize: number;
       apiGroup: string | undefined;
       desc: boolean;
-      description: string| undefined;
+      description: string | undefined;
       method: string | undefined;
       orderKey: string | undefined;
       path: string | undefined;
@@ -695,7 +782,7 @@ export default {
     /**
      * 查询用户菜单列表
      * **/
-    async getMenuList() {
+    async getBaseMenuTree() {
       try {
         const res: Res = await axios.post("/api/menu/getBaseMenuTree");
         return res;

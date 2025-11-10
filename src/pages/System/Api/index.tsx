@@ -9,7 +9,8 @@ import {
   Modal,
   Select,
   Space,
-  Table, Tooltip,
+  Table,
+  Tooltip,
 } from "antd";
 import React, { useState } from "react";
 import {
@@ -21,7 +22,8 @@ import {
 } from "@/pages/System/Api/index.type";
 import { useMount, useSetState } from "react-use";
 import {
-  DeleteOutlined, EditOutlined,
+  DeleteOutlined,
+  EditOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -235,8 +237,7 @@ function ApiAdminContainer(): JSX.Element {
       } else {
         message.error(res?.msg ?? "数据获取失败");
       }
-    } catch {
-    }
+    } catch {}
   };
 
   //删除单条api数据
@@ -270,8 +271,7 @@ function ApiAdminContainer(): JSX.Element {
           } else {
             message.error(res?.msg ?? "数据获取失败");
           }
-        } catch {
-        }
+        } catch {}
       },
     });
   };
@@ -400,33 +400,33 @@ function ApiAdminContainer(): JSX.Element {
       render: (v: null, record: TableRecordData) => {
         const controls = [];
         p.includes("api:up") &&
-        controls.push(
-          <span
-            key="1"
-            className="control-btn blue"
-            onClick={() => onModalShow(record, "up")}
-          >
+          controls.push(
+            <span
+              key="1"
+              className="control-btn blue"
+              onClick={() => onModalShow(record, "up")}
+            >
               <Tooltip placement="top" title="编辑">
                 <EditOutlined />
                 {/*<a>编辑</a>*/}
               </Tooltip>
             </span>
-        );
+          );
         p.includes("api:del") &&
-        controls.push(
-          <span
-            key="2"
-            className="control-btn red"
-            onClick={() => {
-              onDeleteChange(record.ID);
-            }}
-          >
-            <Tooltip placement="top" title="删除">
-              <DeleteOutlined />
-              {/*<a>删除</a>*/}
-            </Tooltip>
-          </span>
-        );
+          controls.push(
+            <span
+              key="2"
+              className="control-btn red"
+              onClick={() => {
+                onDeleteChange(record.ID);
+              }}
+            >
+              <Tooltip placement="top" title="删除">
+                <DeleteOutlined />
+                {/*<a>删除</a>*/}
+              </Tooltip>
+            </span>
+          );
         const result: JSX.Element[] = [];
         controls.forEach((item, index) => {
           if (index) {
@@ -434,7 +434,7 @@ function ApiAdminContainer(): JSX.Element {
           }
           result.push(item);
         });
-        return result
+        return result;
       },
     },
   ];

@@ -837,6 +837,8 @@ const mock =  function (obj) {
       return upUser(params);
     case "/api/delUser":
       return delUser(params);
+    case "/datav/getList":
+      return { "data": { "list": [ { "id": "123", "width": "1920", "height": "1080", "title": "hello project" } ] } };
     default:
       return { status: 404, data: null, message: "api not found" };
   }
