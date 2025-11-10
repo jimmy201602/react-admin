@@ -46,7 +46,7 @@ export default function MenuCom(props: Props): JSX.Element {
         window.open(location.pathname.substring(1), "_blank")?.focus();
       }
     }
-    setOpenKeys(paths.map((item) => `/${item}`));
+    setOpenKeys(paths);
   }, [location]);
 
   // ==================
