@@ -190,7 +190,7 @@ function LoginContainer(): JSX.Element {
         });
 
         // console.log("menu", menu);
-        console.log("powers", powers);
+        // console.log("powers", powers);
         return {
           code: 0,
           data: {

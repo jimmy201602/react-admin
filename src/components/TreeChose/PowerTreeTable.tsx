@@ -77,7 +77,7 @@ export default function TreeTable(props: Props): JSX.Element {
   // TABLE btn权限选中和取消选中，需要记录哪些被选中 id/title/powers
   const onBtnDtoChange = useCallback(
     (e: any, id: number, record: PowerLevel) => {
-      console.log("哈？", record);
+      // console.log("哈？", record);
       const old = [...btnDtoChecked];
       let treeCheckedTemp = [...treeChecked];
       if (e.target.checked) {

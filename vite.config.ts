@@ -13,6 +13,18 @@ export default defineConfig({
   base: "./",
   server: {
     proxy: {
+      "/api/user/resetPassword": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      "/api/user/setUserAuthorities": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
       "/api/sysOperationRecord": {
         target: "http://localhost:8080",
         changeOrigin: true,

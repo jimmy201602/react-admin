@@ -30,7 +30,7 @@ export default {
   reducers: {
     // 保存所有菜单数据
     reducerSetMenus(state: SysState, payload: Menu[]): SysState {
-      console.log("set menus", payload);
+      // console.log("set menus", payload);
       return { ...state, menus: payload };
     },
     // 保存所有角色数据

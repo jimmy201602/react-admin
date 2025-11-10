@@ -117,9 +117,9 @@ function MenuAdminContainer(): JSX.Element {
     setMenuModal({
       modalLoading: true,
     });
-    console.log(values);
-    console.log(dataParameterMenu);
-    console.log(dataMenu);
+    // console.log(values);
+    // console.log(dataParameterMenu);
+    // console.log(dataMenu);
     const dataParameterMenuTmp = [];
     dataParameterMenu.map((item) => {
       if (item.isNew === true) {
@@ -140,8 +140,8 @@ function MenuAdminContainer(): JSX.Element {
         dataMenuTmp.push(item);
       }
     });
-    console.log(dataParameterMenuTmp);
-    console.log(dataMenuTmp);
+    // console.log(dataParameterMenuTmp);
+    // console.log(dataMenuTmp);
     const params: {
       ID: number;
       component: string;
@@ -657,7 +657,7 @@ function MenuAdminContainer(): JSX.Element {
   const [checkFlag, setCheckFlag] = useState<boolean>(false);
 
   const onFormValuesChange = (changedValues, allValues) => {
-    console.log(changedValues, allValues);
+    // console.log(changedValues, allValues);
     if (changedValues.checkFlag !== undefined) {
       setCheckFlag(allValues.checkFlag);
     }

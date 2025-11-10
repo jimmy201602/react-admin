@@ -57,7 +57,7 @@ export function AuthNoPower(props: Props) {
     return false;
   }, [userinfo, location.pathname]);
 
-  console.log("auth:", userinfo, isHavePower, location.pathname);
+  // console.log("auth:", userinfo, isHavePower, location.pathname);
 
   if (!isHavePower && location.pathname !== "/401") {
     return <Navigate to="/401" replace />;

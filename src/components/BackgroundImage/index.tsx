@@ -18,7 +18,7 @@ export default function BackgroundComponent(props: Props): JSX.Element {
   const [page, setPage] = useState(1);
 
   useMount(() => {
-    console.log(1111);
+    // console.log(1111);
   });
   /**
    * 内置图片

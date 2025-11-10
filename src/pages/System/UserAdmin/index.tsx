@@ -631,7 +631,7 @@ function UserAdminContainer(): JSX.Element {
   }, [page, data]);
 
   const backgroundOnChange = async (name, value: string): Promise<void> => {
-    console.log(name, value);
+    // console.log(name, value);
   };
 
   return (
